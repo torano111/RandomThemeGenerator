@@ -43,7 +43,13 @@ class ThemeApp:
         self.reset_button.pack(side=tk.LEFT)
 
         # 最初にお題リストを非同期作成
-        self.reset_themes()
+        # self.reset_themes()
+        
+        # お題リストがないので、最初は無効に
+        self.generate_button.config(state=tk.DISABLED)
+        self.spinbox.config(state=tk.DISABLED)
+
+
 
     def set_interactables_state(self, new_state):
         self.generate_button.config(state=tk.NORMAL if new_state else tk.DISABLED)
