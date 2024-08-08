@@ -93,7 +93,7 @@ class ThemeApp:
             pass
 
         #全お題を出力。デバッグ用。
-        print("、".join(self.generator.get_all_themes()))
+        print("\n".join(self.generator.get_all_themes()))
             
 
     async def update_loading_text(self):
