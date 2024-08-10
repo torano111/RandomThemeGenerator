@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 from AsyncThemeGenerator import AsyncThemeGenerator  # AsyncThemeGeneratorをインポート
-from AsyncThemeGenerator import ThemeMode
 import asyncio
 
 class ThemeApp:
@@ -34,22 +33,17 @@ class ThemeApp:
         self.generate_button.pack(side=tk.LEFT, padx=(0, 10))
 
         # ドロップダウン（コンボボックス）を追加
-        self.combo_box = ttk.Combobox(self.control_frame, values=[tm.str for tm in ThemeMode], state="readonly")
+        self.combo_box = ttk.Combobox(self.control_frame, values=[pt for pt in self.generator.get_prompt_types()], state="readonly")
         self.combo_box.current(0)  # 初期選択を設定
         self.combo_box.pack(side=tk.LEFT, padx=(0, 10))
 
         # リセットボタンを配置
         self.reset_button = ttk.Button(self.control_frame, text="お題テーブルをリセット", command=self.reset_themes)
         self.reset_button.pack(side=tk.LEFT)
-
-        # 最初にお題リストを非同期作成
-        # self.reset_themes()
         
         # お題リストがないので、最初は無効に
         self.generate_button.config(state=tk.DISABLED)
         self.spinbox.config(state=tk.DISABLED)
-
-
 
     def set_interactables_state(self, new_state):
         self.generate_button.config(state=tk.NORMAL if new_state else tk.DISABLED)
@@ -68,12 +62,9 @@ class ThemeApp:
         # 全てのボタンを無効化
         self.set_interactables_state(False)
 
-        # ドロップダウンに応じてthemeMode変更
+        # ドロップダウンに応じてプロンプト変更
         selection = self.combo_box.get()
-        if selection == ThemeMode.Word.str:
-            self.generator.set_theme_mode(ThemeMode.Word)
-        elif selection == ThemeMode.Phrase.str:
-            self.generator.set_theme_mode(ThemeMode.Phrase)
+        self.generator.cur_prompt_idx = self.generator.get_prompt_index_from(selection)
         
         # 非同期タスクをイベントループで実行
         task = asyncio.create_task(self.async_reset_themes())

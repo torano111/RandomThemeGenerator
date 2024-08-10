@@ -1,30 +1,28 @@
 import os
-import asyncio
 import random
 from openai import AsyncOpenAI
 import openai
 import configparser
 import json
-from enum import Enum
-
-class ThemeMode(Enum):
-    Word = 1
-    Phrase = 2
-
-    #文字列化
-    @property
-    def str(self):
-        return {
-            ThemeMode.Phrase: "フレーズ",
-            ThemeMode.Word: "単語"
-        }[self]
-
 
 class AsyncThemeGenerator:
-    def __init__(self, config_path='config.ini'):
+    def __init__(self, config_path='config.ini', prompt_json_path='prompt.json'):
         # 設定ファイルの読み込み
         self.config = configparser.ConfigParser()
         self.config.read(config_path, encoding='utf-8')
+
+        # プロンプトJSONファイルの読み込み
+        with open(prompt_json_path, 'r', encoding='utf-8') as prompt_json:
+            data = json.load(prompt_json)
+            self.prompt_prefix = data["prompt_prefix"]
+            self.prompts = data["prompts"]  # 辞書データとしてself.promptsに格納
+            self.prompt_suffix = data["prompt_suffix"]
+
+            self.cur_prompt_idx = 0
+
+            # 読み込んだpromptsを出力。デバッグ用。
+            # for key, value in self.prompts.items():
+            #     print(f"key: {key}, value: {value}")
 
         # 環境変数からAPIキーを取得
         self.api_key = os.getenv('OPENAI_API_KEY')
@@ -32,18 +30,23 @@ class AsyncThemeGenerator:
 
         self.client = AsyncOpenAI(api_key=self.api_key)
         self.is_generated = False
-        self.themeMode = ThemeMode.Word
 
-    def set_theme_mode(self, themeMode):
-        self.themeMode = themeMode
-
-    def get_prompt(self):
-        if self.themeMode == ThemeMode.Word:
-            return self.config['openai']['prompt_word']
-        elif self.themeMode == ThemeMode.Phrase:
-            return self.config['openai']['prompt_phrase']
-        else:
-            return ""
+    def get_prompt_types(self):
+        return list(self.prompts.keys())
+    
+    def get_prompts_len(self):
+        return len(self.get_prompt_types())
+    
+    def get_prompt_type_at(self, idx):
+        return self.get_prompt_types()[idx]
+    
+    def get_prompt_index_from(self, prompt_type):
+        list = self.get_prompt_types()
+        if prompt_type in list: return list.index(prompt_type)
+        else: return None
+    
+    def get_full_prompt_at(self, idx):
+        return self.prompt_prefix + list(self.prompts.values())[idx] + self.prompt_suffix
 
     # ランダムなお題を生成する関数
     async def generate(self):
@@ -54,7 +57,7 @@ class AsyncThemeGenerator:
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": self.get_prompt()}
+                    {"role": "user", "content": self.get_full_prompt_at(self.cur_prompt_idx)}
                 ],
                 response_format={"type": "json_object"}
             )
